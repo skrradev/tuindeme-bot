@@ -1,0 +1,51 @@
+spring:
+  application:
+    version: ${APP_VERSION:1.0.0}
+  datasource:
+    url: ${DB_URL:}
+    username: ${DB_APP_USERNAME:}
+    password: ${DB_APP_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: false
+        format_sql: true
+  ai:
+    openai:
+      chat:
+        enabled: true
+      embedding:
+        enabled: false
+      image:
+        enabled: false
+      audio:
+        transcription:
+          enabled: false
+        speech:
+          enabled: false
+      api-key: ${OPENAI_API_KEY:}
+
+llm:
+  open-ai:
+    intelligent-model: # $2.50 / 1M input tokens $10.00 / 1M output tokens
+      model: ${OPENAI_INTELLIGENT_MODEL:gpt-4o}
+      price:
+        input: ${OPENAI_INTELLIGENT_MODEL_INPUT_PRICE:2.5}
+        output: ${OPENAI_INTELLIGENT_MODEL_OUTPUT_PRICE:10}
+    fast-model: # $0.15 / 1M input tokens $0.60 / 1M output tokens
+      model: ${OPENAI_FAST_MODEL:gpt-4o-mini}
+      price:
+        input: ${OPENAI_FAST_MODEL_INPUT_PRICE:0.15}
+        output: ${OPENAI_FAST_MODEL_OUTPUT_PRICE:0.6}
+
+telegram:
+  bot:
+    token: ${BOT_KEY:}
+    userName: ${BOT_USERNAME:}
+  authorizedUsers: ${AUTHORIZED_USERS:user1, user2, user3}
+  authorizedChatGroupId: ${AUTHORIZED_CHAT_GROUP_ID:0000000}
+
+
