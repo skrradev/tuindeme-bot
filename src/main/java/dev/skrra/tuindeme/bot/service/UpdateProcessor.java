@@ -2,8 +2,10 @@ package dev.skrra.tuindeme.bot.service;
 
 import dev.skrra.tuindeme.bot.config.prop.TelegramProperties;
 import dev.skrra.tuindeme.bot.model.ChatMessage;
+import dev.skrra.tuindeme.bot.util.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -16,10 +18,15 @@ public class UpdateProcessor {
     private final CommandProcessor commandProcessor;
     private final MessageStorageService messageStorageService;
 
+    @EventListener
     public void processUpdate(Update update) {
+        log.info("Processing update from user: {} from chat: {}", 
+        update.getMessage().getFrom().getUserName(), 
+        update.getMessage().getChatId());
+
         if (update.hasMessage() && update.getMessage().hasText()) {
             String chatId = update.getMessage().getChatId().toString();
-            String userId = update.getMessage().getFrom().getId().toString();
+            String userName = update.getMessage().getFrom().getUserName();
             String messageText = update.getMessage().getText();
 
             // Check if message is from authorized chat
@@ -28,21 +35,21 @@ public class UpdateProcessor {
                 return;
             }
 
-            // Store message from authorized chat regardless of user
+            if (messageText.startsWith("/")) {
+                if (!telegramProperties.getAuthorizedUsers().contains(userName)) {
+                    log.warn("Command attempt from unauthorized user: {}", userName);
+                    return;
+                }
+                commandProcessor.processCommand(update);
+                return;
+            }
+
             ChatMessage chatMessage = ChatMessage.builder()
-                    .username(update.getMessage().getFrom().getUserName())
+                    .username(UserUtils.constructUserName(update.getMessage().getFrom()))
                     .messageText(messageText)
                     .build();
             messageStorageService.addMessage(chatMessage);
-
-            // Process commands only from authorized users
-            if (messageText.startsWith("/")) {
-                if (!telegramProperties.getAuthorizedUsers().contains(userId)) {
-                    log.warn("Command attempt from unauthorized user: {}", userId);
-                    return;
-                }
-                commandProcessor.processCommand(messageText, chatId);
-            }
         }
     }
 }
+

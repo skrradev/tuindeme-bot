@@ -23,11 +23,13 @@ public class TelegramProperties {
     private Set<String> authorizedUsers;
     @NotBlank
     private String authorizedChatGroupId;
+    @NotBlank
+    private String developerChatId;
 
     @Data
     @Validated
     public static class Bot {
-        public static final String API_PATH = "/api/telegram/webhook";
+     
 
         @NotBlank
         private String token;

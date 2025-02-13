@@ -1,6 +1,8 @@
 package dev.skrra.tuindeme.bot.service;
 
 import dev.skrra.tuindeme.bot.model.ChatMessage;
+import dev.skrra.tuindeme.bot.config.prop.ApplicationProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -11,23 +13,19 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class MessageStorageService {
-    private static final int MAX_MESSAGES = 50;
-    private final List<ChatMessage> messages;
-    private final ReentrantReadWriteLock lock;
-
-    public MessageStorageService() {
-        this.messages = new ArrayList<>(MAX_MESSAGES);
-        this.lock = new ReentrantReadWriteLock();
-    }
+    private final ApplicationProperties applicationProperties;
+    private final List<ChatMessage> messages = new ArrayList<>();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public void addMessage(ChatMessage message) {
         lock.writeLock().lock();
         try {
-            if (messages.size() >= MAX_MESSAGES) {
-                messages.remove(0);
-            }
             messages.add(message);
+            if (messages.size() > applicationProperties.getStorage().getMaxMessages()) {
+                messages.removeFirst();
+            }
             log.debug("Added message to storage. Current size: {}", messages.size());
         } finally {
             lock.writeLock().unlock();
@@ -37,21 +35,22 @@ public class MessageStorageService {
     public List<ChatMessage> getLastMessages() {
         lock.readLock().lock();
         try {
-            return Collections.unmodifiableList(new ArrayList<>(messages));
+            return List.copyOf(messages);
         } finally {
             lock.readLock().unlock();
         }
     }
 
     public List<ChatMessage> getLastMessages(int count) {
-        if (count <= 0 || count > MAX_MESSAGES) {
-            throw new IllegalArgumentException("Count must be between 1 and " + MAX_MESSAGES);
+        if (count <= 0 || count > applicationProperties.getStorage().getMaxMessages()) {
+            throw new IllegalArgumentException(
+                    "Count must be between 1 and " + applicationProperties.getStorage().getMaxMessages());
         }
 
         lock.readLock().lock();
         try {
-            int startIndex = Math.max(0, messages.size() - count);
-            return Collections.unmodifiableList(new ArrayList<>(messages.subList(startIndex, messages.size())));
+            int fromIndex = Math.max(0, messages.size() - count);
+            return List.copyOf(messages.subList(fromIndex, messages.size()));
         } finally {
             lock.readLock().unlock();
         }
